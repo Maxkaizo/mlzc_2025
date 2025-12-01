@@ -34,25 +34,19 @@ class MushroomFeatures(BaseModel):
     stem_width: float = Field(
         ..., gt=0, description="Stem width in mm", alias="stem-width"
     )
-    cap_shape: str = Field(..., description="Cap shape (x, b, s, p, o, c, etc)", alias="cap-shape")
-    cap_color: str = Field(..., description="Cap color (n, y, w, g, p, b, u, e, o, r, l, k, c, etc)", alias="cap-color")
-    gill_attachment: str = Field(..., description="Gill attachment (a, d, f, n)", alias="gill-attachment")
-    gill_color: str = Field(
-        ..., description="Gill color (k, w, g, p, o, n, u, y, b, r, etc)", alias="gill-color"
-    )
-    stem_color: str = Field(..., description="Stem color (w, p, g, o, n, b, y, e, c, r, k, etc)", alias="stem-color")
-    stem_surface: str = Field(..., description="Stem surface (s, f, y, k)", alias="stem-surface")
-    habitat: str = Field(..., description="Habitat (u, g, m, d, w, p, l, c)", alias="habitat")
-    odor: str = Field(..., description="Odor (a, l, f, n, s, p, m, c, y, o, u, e, w, r, k, etc)", alias="odor")
-    veil_color: str = Field(..., description="Veil color (w, n, o, y, p, u, r, g, b, e, k, l, c)", alias="veil-color")
-    ring_number: str = Field(..., description="Ring number (o, t, n)", alias="ring-number")
-    ring_type: str = Field(..., description="Ring type (p, e, l, f, n, g, s, z, r, c, etc)", alias="ring-type")
-    bruises: str = Field(..., description="Bruises (t, f)", alias="bruises")
-    season: str = Field(..., description="Season (s, u, a, w)", alias="season")
+    cap_shape: str = Field(..., description="Cap shape", alias="cap-shape")
+    cap_surface: str = Field(..., description="Cap surface", alias="cap-surface")
+    cap_color: str = Field(..., description="Cap color", alias="cap-color")
+    does_bruise_or_bleed: str = Field(..., description="Does bruise or bleed (t, f)", alias="does-bruise-or-bleed")
+    gill_attachment: str = Field(..., description="Gill attachment", alias="gill-attachment")
+    gill_spacing: str = Field(..., description="Gill spacing", alias="gill-spacing")
+    gill_color: str = Field(..., description="Gill color", alias="gill-color")
+    stem_surface: str = Field(..., description="Stem surface", alias="stem-surface")
+    stem_color: str = Field(..., description="Stem color", alias="stem-color")
     has_ring: str = Field(..., description="Has ring (t, f)", alias="has-ring")
-    spore_print_color: str = Field(
-        ..., description="Spore print color (k, w, n, b, u, o, y, r, p, e, g, l, c, etc)", alias="spore-print-color"
-    )
+    ring_type: str = Field(..., description="Ring type", alias="ring-type")
+    habitat: str = Field(..., description="Habitat", alias="habitat")
+    season: str = Field(..., description="Season (s, u, a, w)", alias="season")
 
     class Config:
         populate_by_name = True
@@ -136,20 +130,18 @@ async def predict(features: MushroomFeatures):
         "stem-height": 7.2,
         "stem-width": 6.5,
         "cap-shape": "x",
+        "cap-surface": "s",
         "cap-color": "n",
+        "does-bruise-or-bleed": "t",
         "gill-attachment": "f",
+        "gill-spacing": "c",
         "gill-color": "k",
         "stem-color": "w",
         "stem-surface": "s",
         "habitat": "d",
-        "odor": "p",
-        "veil-color": "w",
-        "ring-number": "o",
         "ring-type": "p",
-        "bruises": "f",
         "season": "s",
-        "has-ring": "t",
-        "spore-print-color": "k"
+        "has-ring": "t"
     }
     ```
     """
@@ -166,26 +158,24 @@ async def predict(features: MushroomFeatures):
         # Prepare feature vector
         feature_dict = features.model_dump(by_alias=True)
 
-        # Get feature names in order
+        # Get feature names in order (must match training order)
         feature_names = [
+            "cap-shape",
+            "cap-surface",
+            "cap-color",
+            "does-bruise-or-bleed",
+            "gill-attachment",
+            "gill-spacing",
+            "gill-color",
+            "stem-surface",
+            "stem-color",
+            "has-ring",
+            "ring-type",
+            "habitat",
+            "season",
             "cap-diameter",
             "stem-height",
             "stem-width",
-            "cap-shape",
-            "cap-color",
-            "gill-attachment",
-            "gill-color",
-            "stem-color",
-            "stem-surface",
-            "habitat",
-            "odor",
-            "veil-color",
-            "ring-number",
-            "ring-type",
-            "bruises",
-            "season",
-            "has-ring",
-            "spore-print-color",
         ]
 
         # Create feature array
