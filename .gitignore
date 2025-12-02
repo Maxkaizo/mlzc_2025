@@ -209,3 +209,7 @@ __marimo__/
 
 # data
 *.csv
+data/
+*.zip
+
+clothing-dataset-small/
