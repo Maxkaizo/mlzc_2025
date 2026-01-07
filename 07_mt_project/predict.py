@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import numpy as np
+import pandas as pd
 import uvicorn
 
 # Create FastAPI app
@@ -152,14 +153,15 @@ async def predict(features: MushroomFeatures):
     try:
         # Extract model components
         model = model_dict["model"]
-        label_encoders = model_dict["label_encoders"]
+        ohe = model_dict["ohe"]
         le_target = model_dict["le_target"]
+        feature_names = model_dict["feature_names"]
 
-        # Prepare feature vector
+        # Prepare feature vector from input
         feature_dict = features.model_dump(by_alias=True)
 
-        # Get feature names in order (must match training order)
-        feature_names = [
+        # Get categorical and numerical feature names
+        categorical_cols = [
             "cap-shape",
             "cap-surface",
             "cap-color",
@@ -173,37 +175,39 @@ async def predict(features: MushroomFeatures):
             "ring-type",
             "habitat",
             "season",
+        ]
+
+        numerical_cols = [
             "cap-diameter",
             "stem-height",
             "stem-width",
+            "spore_print_color_present",
         ]
 
-        # Create feature array
-        feature_array = []
+        # Create DataFrame for preprocessing (matching training pipeline)
+        input_data = {}
 
-        for feat_name in feature_names:
-            feat_value = feature_dict[feat_name]
+        for col in categorical_cols:
+            input_data[col] = [feature_dict[col]]
 
-            # Check if categorical (encoded) or numerical
-            if feat_name in label_encoders:
-                # Encode categorical feature
-                le = label_encoders[feat_name]
-                try:
-                    encoded_value = le.transform([feat_value])[0]
-                except ValueError:
-                    # Unknown category
-                    print(f"⚠️  Unknown value '{feat_value}' for {feat_name}, using 'Unknown'")
-                    encoded_value = le.transform(["Unknown"])[0]
+        for col in numerical_cols:
+            if col == "spore_print_color_present":
+                # Not provided in input, default to 0 (missing)
+                input_data[col] = [0]
             else:
-                # Numerical feature - use as is
-                encoded_value = float(feat_value)
+                input_data[col] = [feature_dict[col]]
 
-            feature_array.append(encoded_value)
+        df_input = pd.DataFrame(input_data)
+
+        # Apply OneHotEncoding to categorical features
+        X_cat_encoded = ohe.transform(df_input[categorical_cols])
+
+        # Combine with numerical features
+        X_encoded = np.hstack([X_cat_encoded, df_input[numerical_cols].values])
 
         # Make prediction
-        X = np.array([feature_array])
-        prediction_proba = model.predict_proba(X)[0]
-        prediction_class = model.predict(X)[0]
+        prediction_proba = model.predict_proba(X_encoded)[0]
+        prediction_class = model.predict(X_encoded)[0]
 
         # Map prediction to class name
         predicted_class_name = le_target.inverse_transform([prediction_class])[0]
