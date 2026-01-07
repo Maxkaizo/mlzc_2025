@@ -25,5 +25,3 @@ dev = [
     "pytest>=7.4.0",
 ]
 
-[tool.uv]
-python-version = "3.12"

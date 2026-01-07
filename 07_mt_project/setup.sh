@@ -18,36 +18,30 @@ echo -e "${BLUE}📌 Step 1: Checking Python version...${NC}"
 python_version=$(python3 --version 2>&1 | awk '{print $2}')
 echo "Python version: $python_version"
 
-# Step 2: Create virtual environment
-echo -e "${BLUE}📌 Step 2: Setting up virtual environment...${NC}"
-if [ ! -d ".venv" ]; then
-    python3 -m venv .venv
-    echo "✅ Virtual environment created"
-else
-    echo "✅ Virtual environment already exists"
+# Step 2: Check if uv is installed
+echo -e "${BLUE}📌 Step 2: Checking uv package manager...${NC}"
+if ! command -v uv &> /dev/null; then
+    echo "⚠️  uv not found. Installing uv..."
+    pip install uv
 fi
+echo "✅ uv is ready"
 
-# Activate virtual environment
-source .venv/bin/activate
-echo "✅ Virtual environment activated"
-
-# Step 3: Install dependencies
-echo -e "${BLUE}📌 Step 3: Installing dependencies...${NC}"
-pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-echo "✅ Dependencies installed"
+# Step 3: Install dependencies with uv
+echo -e "${BLUE}📌 Step 3: Installing dependencies with uv...${NC}"
+uv sync
+echo "✅ Dependencies installed and virtual environment created"
 
 # Step 4: Train model
 echo -e "${BLUE}📌 Step 4: Training model...${NC}"
 if [ ! -f "models/model.pkl" ]; then
-    python train.py
+    uv run python train.py
     echo "✅ Model trained and saved"
 else
     echo "⚠️  Model already exists. Skipping training."
     read -p "Train new model anyway? (y/n) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        python train.py
+        uv run python train.py
     fi
 fi
 
@@ -55,10 +49,10 @@ fi
 echo -e "${BLUE}📌 Step 5: Ready to start API...${NC}"
 echo "Run the following command to start the API:"
 echo ""
-echo -e "${GREEN}python predict.py${NC}"
+echo -e "${GREEN}uv run python predict.py${NC}"
 echo ""
 echo "Then in another terminal, test with:"
-echo -e "${GREEN}python test_api.py${NC}"
+echo -e "${GREEN}uv run python test_api.py${NC}"
 echo ""
 
 # Optional: Docker

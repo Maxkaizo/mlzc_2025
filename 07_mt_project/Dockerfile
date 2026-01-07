@@ -1,46 +1,25 @@
-# Multi-stage Docker build for Mushroom Classifier API
+# Mushroom Classifier API - Single Stage Build
 
-# Stage 1: Build stage
-FROM python:3.12-slim as builder
-
-WORKDIR /build
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files
-COPY pyproject.toml uv.lock* ./
-COPY data/ ./data/
-COPY train.py predict.py ./
-
-# Install uv for fast dependency installation
-RUN pip install --no-cache-dir uv
-
-# Install Python dependencies using uv
-RUN uv pip install --python 3.12 --system-site-packages -r requirements.txt 2>/dev/null || \
-    pip install --no-cache-dir pandas numpy scikit-learn fastapi uvicorn pydantic
-
-# Train the model (optional - can be done separately)
-# Uncomment if you want model included in image
-# RUN python train.py
-
-# Stage 2: Runtime stage
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install only necessary runtime dependencies for sklearn
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy from builder
-COPY --from=builder /build .
+# Copy project files
+COPY pyproject.toml uv.lock* ./
+COPY train.py predict.py test_api.py ./
+COPY data/ ./data/
+COPY models/ ./models/
 
-# Create models directory
-RUN mkdir -p /app/models
+# Install uv for fast dependency installation
+RUN pip install --no-cache-dir uv
+
+# Sync Python dependencies using uv (creates virtual environment)
+RUN uv sync
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -54,4 +33,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run the FastAPI application
-CMD ["python", "predict.py"]
+CMD ["uv", "run", "python", "predict.py"]
